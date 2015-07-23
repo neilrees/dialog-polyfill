@@ -334,6 +334,7 @@ var dialogPolyfill = (function() {
       if (dialog.dispatchEvent(cancelEvent)) {
         dialog.close();
       }
+      document.body.focus();
       break;
 
     }
