@@ -188,34 +188,11 @@ var dialogPolyfill = (function() {
     element.dialogPolyfillInfo = {};
   };
 
-  // The overlay is used to simulate how a modal dialog blocks the document. The
-  // blocking dialog is positioned on top of the overlay, and the rest of the
-  // dialogs on the pending dialog stack are positioned below it. In the actual
-  // implementation, the modal dialog stacking is controlled by the top layer,
-  // where z-index has no effect.
   var TOP_LAYER_ZINDEX = 100000;
   var MAX_PENDING_DIALOGS = 100000;
 
   dialogPolyfill.DialogManager = function() {
     this.pendingDialogStack = [];
-    this.overlay = document.createElement('div');
-    this.overlay.style.width = '100%';
-    this.overlay.style.height = '100%';
-    this.overlay.style.position = 'fixed';
-    this.overlay.style.left = '0px';
-    this.overlay.style.top = '0px';
-    this.overlay.style.backgroundColor = 'rgba(0,0,0,0.0)';
-
-    this.focusPageLast = this.createFocusable();
-    this.overlay.appendChild(this.focusPageLast);
-
-    this.overlay.addEventListener('click', function(e) {
-      var redirectedEvent = document.createEvent('MouseEvents');
-      redirectedEvent.initMouseEvent(e.type, e.bubbles, e.cancelable, window,
-          e.detail, e.screenX, e.screenY, e.clientX, e.clientY, e.ctrlKey,
-          e.altKey, e.shiftKey, e.metaKey, e.button, e.relatedTarget);
-      document.body.dispatchEvent(redirectedEvent);
-    });
     window.addEventListener('load', function() {
       var forms = document.getElementsByTagName('form'),
       i = forms.length;
@@ -246,39 +223,10 @@ var dialogPolyfill = (function() {
     return span;
   };
 
-  dialogPolyfill.DialogManager.prototype.blockDocument = function() {
-    if (!document.body.contains(this.overlay)) {
-      document.body.appendChild(this.overlay);
-
-      // On Safari/Mac (and possibly other browsers), the documentElement is
-      // not focusable. This is required for modal dialogs as it is the first
-      // element to be hit by a tab event, and further tabs are redirected to
-      // the most visible dialog.
-      if (this.needsDocumentElementFocus === undefined) {
-        document.documentElement.focus();
-        this.needsDocumentElementFocus =
-            (document.activeElement != document.documentElement);
-      }
-      if (this.needsDocumentElementFocus) {
-        document.documentElement.tabIndex = 1;
-      }
-    }
-  };
-
-  dialogPolyfill.DialogManager.prototype.unblockDocument = function() {
-    document.body.removeChild(this.overlay);
-    if (this.needsDocumentElementFocus) {
-      // TODO: Restore the previous tabIndex, rather than clearing it.
-      document.documentElement.tabIndex = '';
-    }
-  };
-
   dialogPolyfill.DialogManager.prototype.updateStacking = function() {
     if (this.pendingDialogStack.length == 0) {
-      this.unblockDocument();
       return;
     }
-    this.blockDocument();
 
     var zIndex = TOP_LAYER_ZINDEX;
     for (var i = 0; i < this.pendingDialogStack.length; i++) {
